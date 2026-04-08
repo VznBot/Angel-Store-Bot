@@ -1,5 +1,5 @@
 {
-  "name": "angel-store",
+  "name": "angel-store-bot",
   "version": "1.0.0",
   "description": "Sistema de tickets da Angel Store",
   "main": "angstore.js",
