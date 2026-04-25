@@ -1,319 +1,122 @@
-require('dotenv').config();
+require("dotenv").config();
 
+const fs = require("fs");
 const {
   Client,
   GatewayIntentBits,
   Partials,
-  Events,
-  PermissionsBitField,
   ChannelType,
+  PermissionsBitField,
+  EmbedBuilder,
   ActionRowBuilder,
-  StringSelectMenuBuilder,
   ButtonBuilder,
   ButtonStyle,
-  EmbedBuilder
-} = require('discord.js');
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
+  SlashCommandBuilder
+} = require("discord.js");
 
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
-  ],
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
   partials: [Partials.Channel]
 });
 
-const STAFF_ROLE_ID = process.env.STAFF_ROLE_ID;
-const TICKET_CATEGORY_ID = process.env.TICKET_CATEGORY_ID;
-const LOG_CHANNEL_ID = process.env.LOG_CHANNEL_ID;
-const PIX_KEY = process.env.PIX_KEY;
+const DB_FILE = "./database.json";
 
-const catalog = [
-  {
-    id: 'ig_seg_br',
-    label: 'Instagram Seguidores BR',
-    emoji: '🇧🇷',
-    description: 'Seguidores brasileiros',
-    products: [
-      ['100 seguidores', '3.00'],
-      ['300 seguidores', '9.00'],
-      ['500 seguidores', '15.00'],
-      ['1000 seguidores', '30.00'],
-      ['1500 seguidores', '45.00'],
-      ['2000 seguidores', '60.00'],
-      ['3000 seguidores', '90.00'],
-      ['5000 seguidores', '180.00'],
-      ['8000 seguidores', '220.00'],
-      ['10000 seguidores', '280.00']
-    ]
-  },
-  {
-    id: 'ig_seg_world',
-    label: 'Instagram Seguidores Mundial',
-    emoji: '🌍',
-    description: 'Seguidores mundiais',
-    products: [
-      ['1000 seguidores', '15.00'],
-      ['2000 seguidores', '30.00'],
-      ['3000 seguidores', '45.00'],
-      ['5000 seguidores', '75.00'],
-      ['10000 seguidores', '150.00'],
-      ['20000 seguidores', '300.00']
-    ]
-  },
-  {
-    id: 'ig_views',
-    label: 'Instagram Views Reels/IGTV',
-    emoji: '🎬',
-    description: 'Visualizações para Reels ou IGTV',
-    products: [
-      ['1000 visualizações', '5.00'],
-      ['2000 visualizações', '10.00'],
-      ['3000 visualizações', '15.00'],
-      ['5000 visualizações', '25.00'],
-      ['8000 visualizações', '40.00'],
-      ['10000 visualizações', '50.00']
-    ]
-  },
-  {
-    id: 'ig_likes_br',
-    label: 'Instagram Curtidas BR',
-    emoji: '❤️',
-    description: 'Curtidas brasileiras',
-    products: [
-      ['100 curtidas', '4.00'],
-      ['300 curtidas', '12.00'],
-      ['500 curtidas', '20.00'],
-      ['1000 curtidas', '40.00'],
-      ['1500 curtidas', '60.00'],
-      ['2000 curtidas', '80.00'],
-      ['3000 curtidas', '120.00'],
-      ['5000 curtidas', '200.00'],
-      ['8000 curtidas', '320.00'],
-      ['10000 curtidas', '400.00']
-    ]
-  },
-  {
-    id: 'ig_comments',
-    label: 'Instagram Comentários',
-    emoji: '💬',
-    description: 'Comentários personalizados',
-    products: [
-      ['10 comentários', '6.00'],
-      ['30 comentários', '18.00'],
-      ['50 comentários', '30.00'],
-      ['100 comentários', '60.00'],
-      ['200 comentários', '120.00'],
-      ['500 comentários', '300.00']
-    ]
-  },
-  {
-    id: 'ig_live',
-    label: 'Instagram Views Live',
-    emoji: '📡',
-    description: 'Visualizações em live',
-    products: [
-      ['100 visualizações', '10.00'],
-      ['200 visualizações', '20.00'],
-      ['300 visualizações', '30.00'],
-      ['500 visualizações', '45.00'],
-      ['1000 visualizações', '95.00'],
-      ['2000 visualizações', '190.00']
-    ]
-  },
-  {
-    id: 'fb_profile',
-    label: 'Facebook Perfil Pessoal',
-    emoji: '📘',
-    description: 'Seguidores para perfil',
-    products: [
-      ['200 seguidores', '10.00'],
-      ['300 seguidores', '15.00'],
-      ['400 seguidores', '20.00'],
-      ['500 seguidores', '25.00'],
-      ['1000 seguidores', '50.00'],
-      ['1500 seguidores', '75.00'],
-      ['2000 seguidores', '100.00'],
-      ['3000 seguidores', '150.00'],
-      ['5000 seguidores', '250.00'],
-      ['8000 seguidores', '400.00'],
-      ['10000 seguidores', '500.00']
-    ]
-  },
-  {
-    id: 'yt_subs',
-    label: 'YouTube Inscritos',
-    emoji: '▶️',
-    description: 'Inscritos para YouTube',
-    products: [
-      ['50 inscritos', '20.00'],
-      ['100 inscritos', '40.00'],
-      ['150 inscritos', '60.00'],
-      ['200 inscritos', '80.00'],
-      ['500 inscritos', '180.00'],
-      ['1000 inscritos', '340.00']
-    ]
-  },
-  {
-    id: 'tt_seg_br',
-    label: 'TikTok Seguidores BR',
-    emoji: '🎵',
-    description: 'Seguidores brasileiros no TikTok',
-    products: [
-      ['100 seguidores', '5.00'],
-      ['200 seguidores', '10.00'],
-      ['300 seguidores', '15.00'],
-      ['500 seguidores', '25.00'],
-      ['1000 seguidores', '50.00'],
-      ['1500 seguidores', '75.00'],
-      ['2000 seguidores', '100.00']
-    ]
-  },
-  {
-    id: 'tt_likes_br',
-    label: 'TikTok Curtidas BR',
-    emoji: '🔥',
-    description: 'Curtidas brasileiras no TikTok',
-    products: [
-      ['100 curtidas', '4.00'],
-      ['300 curtidas', '12.00'],
-      ['500 curtidas', '20.00'],
-      ['1000 curtidas', '40.00'],
-      ['1500 curtidas', '60.00'],
-      ['2000 curtidas', '80.00'],
-      ['3000 curtidas', '120.00'],
-      ['5000 curtidas', '200.00'],
-      ['8000 curtidas', '320.00'],
-      ['10000 curtidas', '400.00']
-    ]
+function loadDB() {
+  if (!fs.existsSync(DB_FILE)) {
+    fs.writeFileSync(
+      DB_FILE,
+      JSON.stringify({ products: {}, carts: {}, coupons: {} }, null, 2)
+    );
   }
-];
 
-function brl(value) {
-  return Number(value).toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL'
-  });
+  const db = JSON.parse(fs.readFileSync(DB_FILE, "utf8"));
+
+  if (!db.products) db.products = {};
+  if (!db.carts) db.carts = {};
+  if (!db.coupons) db.coupons = {};
+
+  saveDB(db);
+  return db;
 }
 
-function isStaff(member) {
+function saveDB(db) {
+  fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
+}
+
+function generateId() {
+  return Math.random().toString(16).slice(2, 14).toUpperCase();
+}
+
+function formatMoney(value) {
+  return `R$ ${Number(value).toFixed(2).replace(".", ",")}`;
+}
+
+function isAdmin(member) {
   if (!member) return false;
+
   return (
     member.permissions.has(PermissionsBitField.Flags.Administrator) ||
-    member.roles.cache.has(STAFF_ROLE_ID)
+    member.permissions.has(PermissionsBitField.Flags.ManageGuild) ||
+    member.roles.cache.has(process.env.ADMIN_ROLE_ID)
   );
 }
 
-function makeProductId(categoryId, index) {
-  return `${categoryId}_${index}`;
-}
-
-function getProductById(productId) {
-  for (const category of catalog) {
-    for (let i = 0; i < category.products.length; i++) {
-      const id = makeProductId(category.id, i);
-      if (id === productId) {
-        return {
-          id,
-          categoryId: category.id,
-          categoryLabel: category.label,
-          categoryEmoji: category.emoji,
-          name: category.products[i][0],
-          price: category.products[i][1]
-        };
-      }
-    }
-  }
-  return null;
-}
-
-function buildPanelMessages() {
-  const rows = [];
-
-  for (const category of catalog) {
-    const menu = new StringSelectMenuBuilder()
-      .setCustomId(`store_select_${category.id}`)
-      .setPlaceholder(`Selecione um produto • ${category.label}`)
-      .addOptions(
-        category.products.map((product, index) => ({
-          label: product[0].slice(0, 100),
-          description: `Valor: ${brl(product[1])}`.slice(0, 100),
-          value: makeProductId(category.id, index),
-          emoji: category.emoji
-        }))
-      );
-
-    rows.push(new ActionRowBuilder().addComponents(menu));
-  }
-
-  const chunks = [];
-  for (let i = 0; i < rows.length; i += 5) {
-    chunks.push(rows.slice(i, i + 5));
-  }
-
-  return chunks;
-}
-
-async function sendStorePanel(channel) {
-  const embed = new EmbedBuilder()
-    .setTitle('📦 Selecione um produto')
-    .setDescription(
-      [
-        'Escolha um produto nos menus abaixo para abrir seu ticket de compra.',
-        '',
-        '✅ Inicia em 12 a 24 horas. Se não, em até 48 horas.',
-        '✅ Após iniciado, a entrega pode ocorrer de 50 a 250 seguidores por dia.',
-        '✅ Público: 100% brasileiros.'
-      ].join('\n')
-    )
-    .setColor(0x8b5cf6)
-    .setFooter({ text: 'Angel Store • Sistema de Tickets' });
-
-  const chunks = buildPanelMessages();
-
-  await channel.send({ embeds: [embed] });
-
-  for (const rows of chunks) {
-    await channel.send({ components: rows });
-  }
-}
-
-async function createTicket(interaction, product) {
-  const guild = interaction.guild;
-  const member = interaction.member;
-
-  const existing = guild.channels.cache.find(
-    (c) =>
-      c.type === ChannelType.GuildText &&
-      c.topic &&
-      c.topic.includes(`ticketOwner=${member.id}`)
-  );
-
-  if (existing) {
-    await interaction.reply({
-      content: `Você já possui um ticket aberto: ${existing}`,
-      ephemeral: true
-    });
-    return;
-  }
-
-  const channelName = `ticket-${interaction.user.username}`
+function sanitizeChannelName(name) {
+  return name
     .toLowerCase()
-    .replace(/[^a-z0-9-]/g, '')
+    .replace(/[^a-z0-9]/gi, "-")
+    .replace(/-+/g, "-")
     .slice(0, 20);
+}
+
+function parseColor(color) {
+  if (!color) return 0xf1c40f;
+
+  const clean = color.replace("#", "");
+
+  if (!/^[0-9A-Fa-f]{6}$/.test(clean)) return 0xf1c40f;
+
+  return parseInt(clean, 16);
+}
+
+async function getOrCreateCart(interaction, db) {
+  const guild = interaction.guild;
+  const user = interaction.user;
+
+  let cart = Object.values(db.carts).find(
+    (c) => c.userId === user.id && c.status === "open"
+  );
+
+  if (cart) {
+    const oldChannel = guild.channels.cache.get(cart.channelId);
+    if (oldChannel) return { cart, channel: oldChannel };
+  }
+
+  let category = guild.channels.cache.find(
+    (c) => c.name === "🛒・carrinhos" && c.type === ChannelType.GuildCategory
+  );
+
+  if (!category) {
+    category = await guild.channels.create({
+      name: "🛒・carrinhos",
+      type: ChannelType.GuildCategory
+    });
+  }
 
   const channel = await guild.channels.create({
-    name: channelName || `ticket-${interaction.user.id}`,
+    name: `carrinho-${sanitizeChannelName(user.username)}`,
     type: ChannelType.GuildText,
-    parent: TICKET_CATEGORY_ID || null,
-    topic: `ticketOwner=${member.id};productId=${product.id};status=aguardando_pagamento`,
+    parent: category.id,
     permissionOverwrites: [
       {
-        id: guild.roles.everyone.id,
+        id: guild.id,
         deny: [PermissionsBitField.Flags.ViewChannel]
       },
       {
-        id: member.id,
+        id: user.id,
         allow: [
           PermissionsBitField.Flags.ViewChannel,
           PermissionsBitField.Flags.SendMessages,
@@ -321,245 +124,818 @@ async function createTicket(interaction, product) {
         ]
       },
       {
-        id: STAFF_ROLE_ID,
+        id: process.env.ADMIN_ROLE_ID,
         allow: [
           PermissionsBitField.Flags.ViewChannel,
           PermissionsBitField.Flags.SendMessages,
           PermissionsBitField.Flags.ReadMessageHistory,
           PermissionsBitField.Flags.ManageChannels
         ]
+      },
+      {
+        id: client.user.id,
+        allow: [
+          PermissionsBitField.Flags.ViewChannel,
+          PermissionsBitField.Flags.SendMessages,
+          PermissionsBitField.Flags.ManageChannels,
+          PermissionsBitField.Flags.EmbedLinks,
+          PermissionsBitField.Flags.ReadMessageHistory
+        ]
       }
     ]
   });
 
+  cart = {
+    id: generateId(),
+    userId: user.id,
+    channelId: channel.id,
+    items: [],
+    discount: 0,
+    couponCode: null,
+    status: "open",
+    cartMessageId: null,
+    createdAt: Date.now()
+  };
+
+  db.carts[cart.id] = cart;
+  saveDB(db);
+
+  await channel.send({
+    content: `<@${user.id}>`,
+    embeds: [
+      new EmbedBuilder()
+        .setColor(0xf1c40f)
+        .setTitle("Carrinho criado")
+        .setDescription(
+          "Este é o seu carrinho exclusivo.\nAdicione produtos, vá para o pagamento ou delete o carrinho caso tenha aberto por engano."
+        )
+    ]
+  });
+
+  return { cart, channel };
+}
+
+async function renderCart(channel, cart) {
+  const subtotal = cart.items.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+
+  const discountValue = subtotal * cart.discount;
+  const total = subtotal - discountValue;
+
+  const productsText =
+    cart.items.length === 0
+      ? "Nenhum produto no carrinho."
+      : cart.items
+          .map(
+            (item) =>
+              `**${item.quantity}x ${item.name}**\nPreço: ${formatMoney(
+                item.price
+              )} | Total: ${formatMoney(item.price * item.quantity)}`
+          )
+          .join("\n\n");
+
   const embed = new EmbedBuilder()
-    .setTitle('🛒 Novo pedido criado')
-    .setColor(0x22c55e)
-    .setDescription(
-      [
-        `Olá ${interaction.user}, seu ticket foi criado com sucesso.`,
-        '',
-        `**Categoria:** ${product.categoryEmoji} ${product.categoryLabel}`,
-        `**Produto:** ${product.name}`,
-        `**Valor:** ${brl(product.price)}`,
-        '',
-        `**Chave Pix para pagamento:**`,
-        `\`${PIX_KEY || 'CONFIGURE_A_PIX_KEY_NO_ENV'}\``,
-        '',
-        'Após pagar, clique no botão **Já paguei no Pix**.',
-        'Um administrador irá verificar e confirmar o pagamento.'
-      ].join('\n')
+    .setColor(0xf1c40f)
+    .setTitle("Resumo de compras")
+    .setDescription(productsText)
+    .addFields(
+      {
+        name: "🛒 Subtotal",
+        value: formatMoney(subtotal),
+        inline: true
+      },
+      {
+        name: "🏷️ Desconto",
+        value:
+          cart.discount > 0
+            ? `${Math.round(cart.discount * 100)}% ${
+                cart.couponCode ? `(${cart.couponCode})` : ""
+              }`
+            : "0",
+        inline: true
+      },
+      {
+        name: "💰 Total",
+        value: formatMoney(total),
+        inline: true
+      }
     )
-    .setFooter({ text: 'Angel Store' });
+    .setFooter({ text: `Identificador: ${cart.id}` })
+    .setTimestamp();
 
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
-      .setCustomId(`paid_${product.id}_${interaction.user.id}`)
-      .setLabel('Já paguei no Pix')
+      .setCustomId(`pay_${cart.id}`)
+      .setLabel("Ir para o pagamento")
+      .setEmoji("💸")
       .setStyle(ButtonStyle.Success),
+
     new ButtonBuilder()
-      .setCustomId(`close_${interaction.user.id}`)
-      .setLabel('Fechar Ticket')
+      .setCustomId(`coupon_${cart.id}`)
+      .setLabel("Aplicar cupom")
+      .setEmoji("🏷️")
+      .setStyle(ButtonStyle.Primary),
+
+    new ButtonBuilder()
+      .setCustomId(`delete_${cart.id}`)
+      .setLabel("Deletar carrinho")
+      .setEmoji("⚠️")
       .setStyle(ButtonStyle.Danger)
   );
 
-  await channel.send({
-    content: `${interaction.user} <@&${STAFF_ROLE_ID}>`,
+  if (cart.cartMessageId) {
+    try {
+      const oldMessage = await channel.messages.fetch(cart.cartMessageId);
+      await oldMessage.edit({ embeds: [embed], components: [row] });
+      return;
+    } catch {}
+  }
+
+  const msg = await channel.send({
     embeds: [embed],
     components: [row]
   });
 
-  await interaction.reply({
-    content: `Seu ticket foi criado: ${channel}`,
-    ephemeral: true
-  });
+  const db = loadDB();
 
-  const logChannel = guild.channels.cache.get(LOG_CHANNEL_ID);
-  if (logChannel) {
-    await logChannel.send(
-      `📩 Ticket criado por ${interaction.user.tag} • ${product.categoryLabel} • ${product.name} • ${brl(product.price)}`
-    );
+  if (db.carts[cart.id]) {
+    db.carts[cart.id].cartMessageId = msg.id;
+    saveDB(db);
   }
 }
 
-client.once(Events.ClientReady, () => {
-  console.log(`Bot online como ${client.user.tag}`);
-});
-
-client.on(Events.MessageCreate, async (message) => {
-  if (message.author.bot) return;
-
-  if (message.content === '!painel') {
-    if (!isStaff(message.member)) {
-      await message.reply('Apenas admins/equipe podem enviar o painel.');
-      return;
-    }
-
-    await sendStorePanel(message.channel);
-  }
-});
-
-client.on(Events.InteractionCreate, async (interaction) => {
-  try {
-    if (interaction.isStringSelectMenu()) {
-      const productId = interaction.values[0];
-      const product = getProductById(productId);
-
-      if (!product) {
-        await interaction.reply({
-          content: 'Produto não encontrado.',
-          ephemeral: true
-        });
-        return;
+async function sendProductMessage(interaction, product) {
+  const embed = new EmbedBuilder()
+    .setColor(product.color)
+    .setTitle(product.title)
+    .setDescription(product.description)
+    .addFields(
+      {
+        name: "🌎 Produto",
+        value: product.name,
+        inline: true
+      },
+      {
+        name: "💸 Preço",
+        value: formatMoney(product.price),
+        inline: true
+      },
+      {
+        name: "📦 Estoque",
+        value: String(product.stock),
+        inline: true
       }
+    )
+    .setFooter({
+      text: product.footer || "Holy Store - Todos os direitos reservados"
+    });
 
-      await createTicket(interaction, product);
-      return;
-    }
+  if (product.image) {
+    embed.setImage(product.image);
+  }
 
-    if (interaction.isButton()) {
-      const { customId } = interaction;
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`addcart_${product.id}`)
+      .setLabel("Adicionar ao carrinho")
+      .setEmoji("🛍️")
+      .setStyle(ButtonStyle.Success)
+  );
 
-      if (customId.startsWith('paid_')) {
-        const parts = customId.split('_');
-        const buyerId = parts[parts.length - 1];
-        const productId = parts.slice(1, -1).join('_');
-        const product = getProductById(productId);
+  await interaction.channel.send({
+    embeds: [embed],
+    components: [row]
+  });
+}
 
-        if (interaction.user.id !== buyerId && !isStaff(interaction.member)) {
-          await interaction.reply({
-            content: 'Somente o cliente deste ticket pode usar este botão.',
+client.once("ready", async () => {
+  console.log(`✅ Bot online como ${client.user.tag}`);
+
+  const guild = client.guilds.cache.get(process.env.GUILD_ID);
+
+  if (!guild) {
+    console.log("❌ GUILD_ID inválido ou bot fora do servidor.");
+    return;
+  }
+
+  await guild.commands.set([
+    new SlashCommandBuilder()
+      .setName("addproduto")
+      .setDescription("Cria uma mensagem de produto personalizada.")
+      .addStringOption((option) =>
+        option
+          .setName("titulo")
+          .setDescription("Título da embed do produto.")
+          .setRequired(true)
+      )
+      .addStringOption((option) =>
+        option
+          .setName("produto")
+          .setDescription("Nome do produto.")
+          .setRequired(true)
+      )
+      .addNumberOption((option) =>
+        option
+          .setName("preco")
+          .setDescription("Preço do produto. Exemplo: 15")
+          .setRequired(true)
+      )
+      .addIntegerOption((option) =>
+        option
+          .setName("estoque")
+          .setDescription("Estoque do produto.")
+          .setRequired(true)
+      )
+      .addStringOption((option) =>
+        option
+          .setName("descricao")
+          .setDescription("Descrição do produto.")
+          .setRequired(true)
+      )
+      .addStringOption((option) =>
+        option
+          .setName("imagem")
+          .setDescription("Link da imagem/banner do produto.")
+          .setRequired(false)
+      )
+      .addStringOption((option) =>
+        option
+          .setName("emoji")
+          .setDescription("Emoji do produto. Exemplo: 🚀")
+          .setRequired(false)
+      )
+      .addStringOption((option) =>
+        option
+          .setName("cor")
+          .setDescription("Cor em hexadecimal. Exemplo: #F1C40F")
+          .setRequired(false)
+      )
+      .addStringOption((option) =>
+        option
+          .setName("rodape")
+          .setDescription("Texto do rodapé da embed.")
+          .setRequired(false)
+      )
+      .toJSON(),
+
+    new SlashCommandBuilder()
+      .setName("addcupom")
+      .setDescription("Cria um cupom de desconto personalizado.")
+      .addStringOption((option) =>
+        option
+          .setName("codigo")
+          .setDescription("Código do cupom. Exemplo: BOOSTER26")
+          .setRequired(true)
+      )
+      .addNumberOption((option) =>
+        option
+          .setName("desconto")
+          .setDescription("Porcentagem de desconto. Exemplo: 15")
+          .setRequired(true)
+      )
+      .addStringOption((option) =>
+        option
+          .setName("titulo")
+          .setDescription("Título da mensagem do cupom.")
+          .setRequired(false)
+      )
+      .addStringOption((option) =>
+        option
+          .setName("descricao")
+          .setDescription("Descrição personalizada do cupom.")
+          .setRequired(false)
+      )
+      .addStringOption((option) =>
+        option
+          .setName("cor")
+          .setDescription("Cor em hexadecimal. Exemplo: #F1C40F")
+          .setRequired(false)
+      )
+      .toJSON()
+  ]);
+
+  console.log("✅ Comandos /addproduto e /addcupom registrados.");
+});
+
+client.on("interactionCreate", async (interaction) => {
+  try {
+    if (interaction.isChatInputCommand()) {
+      if (interaction.commandName === "addproduto") {
+        if (!isAdmin(interaction.member)) {
+          return interaction.reply({
+            content: "❌ Apenas administradores podem adicionar produtos.",
             ephemeral: true
           });
-          return;
         }
 
-        const confirmRow = new ActionRowBuilder().addComponents(
-          new ButtonBuilder()
-            .setCustomId(`confirm_${productId}_${buyerId}`)
-            .setLabel('Confirmar pagamento')
-            .setStyle(ButtonStyle.Primary),
-          new ButtonBuilder()
-            .setCustomId(`close_${buyerId}`)
-            .setLabel('Fechar Ticket')
-            .setStyle(ButtonStyle.Danger)
-        );
+        const title = interaction.options.getString("titulo");
+        const name = interaction.options.getString("produto");
+        const price = interaction.options.getNumber("preco");
+        const stock = interaction.options.getInteger("estoque");
+        const description = interaction.options.getString("descricao");
+        const image = interaction.options.getString("imagem");
+        const emoji = interaction.options.getString("emoji") || "🛍️";
+        const color = parseColor(interaction.options.getString("cor"));
+        const footer =
+          interaction.options.getString("rodape") ||
+          "Holy Store - Todos os direitos reservados";
 
-        const embed = new EmbedBuilder()
-          .setTitle('💸 Pagamento informado')
-          .setColor(0xf59e0b)
-          .setDescription(
-            [
-              `${interaction.user} informou que realizou o pagamento via Pix.`,
-              '',
-              `**Produto:** ${product ? product.name : 'Produto'}`,
-              `**Valor:** ${product ? brl(product.price) : '---'}`,
-              '',
-              'A equipe deve verificar o pagamento e clicar em **Confirmar pagamento**.'
-            ].join('\n')
-          );
+        if (price <= 0) {
+          return interaction.reply({
+            content: "❌ O preço precisa ser maior que 0.",
+            ephemeral: true
+          });
+        }
 
-        await interaction.reply({
-          content: 'Aviso enviado para a equipe.',
+        if (stock < 0) {
+          return interaction.reply({
+            content: "❌ O estoque não pode ser negativo.",
+            ephemeral: true
+          });
+        }
+
+        const db = loadDB();
+
+        const product = {
+          id: generateId(),
+          title,
+          name,
+          price,
+          stock,
+          description,
+          image,
+          emoji,
+          color,
+          footer,
+          createdAt: Date.now()
+        };
+
+        db.products[product.id] = product;
+        saveDB(db);
+
+        await sendProductMessage(interaction, product);
+
+        return interaction.reply({
+          content: "✅ Produto criado e enviado com sucesso.",
           ephemeral: true
         });
+      }
+
+      if (interaction.commandName === "addcupom") {
+        if (!isAdmin(interaction.member)) {
+          return interaction.reply({
+            content: "❌ Apenas administradores podem criar cupons.",
+            ephemeral: true
+          });
+        }
+
+        const code = interaction.options
+          .getString("codigo")
+          .trim()
+          .toUpperCase()
+          .replace(/\s+/g, "");
+
+        const discount = interaction.options.getNumber("desconto");
+        const title =
+          interaction.options.getString("titulo") || "Cupom de desconto criado";
+        const description =
+          interaction.options.getString("descricao") ||
+          "Use este cupom no carrinho para receber desconto na sua compra.";
+        const color = parseColor(interaction.options.getString("cor"));
+
+        if (!/^[A-Z0-9_-]{3,20}$/.test(code)) {
+          return interaction.reply({
+            content:
+              "❌ Código inválido. Use apenas letras, números, _ ou -. Exemplo: BOOSTER26",
+            ephemeral: true
+          });
+        }
+
+        if (discount <= 0 || discount > 90) {
+          return interaction.reply({
+            content: "❌ O desconto precisa ser maior que 0 e no máximo 90%.",
+            ephemeral: true
+          });
+        }
+
+        const db = loadDB();
+
+        db.coupons[code] = {
+          code,
+          discount,
+          createdBy: interaction.user.id,
+          createdAt: Date.now(),
+          active: true
+        };
+
+        saveDB(db);
+
+        const embed = new EmbedBuilder()
+          .setColor(color)
+          .setTitle(title)
+          .setDescription(
+            `${description}\n\n` +
+              `🏷️ **Código:** \`${code}\`\n` +
+              `💸 **Desconto:** ${discount}%\n\n` +
+              "Para usar, abra seu carrinho, clique em **Aplicar cupom** e digite o código acima."
+          )
+          .setFooter({ text: "Holy Store - Sistema de Cupons" })
+          .setTimestamp();
 
         await interaction.channel.send({
-          content: `<@&${STAFF_ROLE_ID}> verifiquem o pagamento deste pedido.`,
-          embeds: [embed],
-          components: [confirmRow]
-        });
-
-        return;
-      }
-
-      if (customId.startsWith('confirm_')) {
-        if (!isStaff(interaction.member)) {
-          await interaction.reply({
-            content: 'Somente admins/equipe podem confirmar pagamento.',
-            ephemeral: true
-          });
-          return;
-        }
-
-        const parts = customId.split('_');
-        const buyerId = parts[parts.length - 1];
-        const productId = parts.slice(1, -1).join('_');
-        const product = getProductById(productId);
-
-        const embed = new EmbedBuilder()
-          .setTitle('✅ Pagamento confirmado')
-          .setColor(0x22c55e)
-          .setDescription(
-            [
-              `Pagamento confirmado por ${interaction.user}.`,
-              '',
-              `**Cliente:** <@${buyerId}>`,
-              `**Produto:** ${product ? product.name : 'Produto'}`,
-              `**Valor:** ${product ? brl(product.price) : '---'}`,
-              '',
-              'A equipe pode seguir com a entrega do pedido.'
-            ].join('\n')
-          );
-
-        await interaction.reply({
           embeds: [embed]
         });
 
-        const logChannel = interaction.guild.channels.cache.get(LOG_CHANNEL_ID);
-        if (logChannel) {
-          await logChannel.send(
-            `✅ Pagamento confirmado por ${interaction.user.tag} • Cliente <@${buyerId}> • ${product ? product.name : 'Produto'}`
-          );
-        }
-
-        return;
+        return interaction.reply({
+          content: `✅ Cupom \`${code}\` criado com ${discount}% de desconto.`,
+          ephemeral: true
+        });
       }
+    }
 
-      if (customId.startsWith('close_')) {
-        const ownerId = customId.split('_')[1];
+    if (interaction.isButton()) {
+      const db = loadDB();
 
-        if (interaction.user.id !== ownerId && !isStaff(interaction.member)) {
-          await interaction.reply({
-            content: 'Apenas o dono do ticket ou a equipe podem fechar.',
+      if (interaction.customId.startsWith("addcart_")) {
+        const productId = interaction.customId.replace("addcart_", "");
+        const product = db.products[productId];
+
+        if (!product) {
+          return interaction.reply({
+            content: "❌ Produto não encontrado.",
             ephemeral: true
           });
-          return;
         }
 
-        await interaction.reply('🔒 Ticket será fechado em 5 segundos...');
+        if (product.stock <= 0) {
+          return interaction.reply({
+            content: "❌ Este produto está sem estoque.",
+            ephemeral: true
+          });
+        }
+
+        const { cart, channel } = await getOrCreateCart(interaction, db);
+
+        const existing = cart.items.find((item) => item.id === product.id);
+
+        if (existing) {
+          existing.quantity += 1;
+        } else {
+          cart.items.push({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            quantity: 1
+          });
+        }
+
+        db.carts[cart.id] = cart;
+        saveDB(db);
+
+        await renderCart(channel, cart);
+
+        return interaction.reply({
+          content: `✅ Produto adicionado ao carrinho: ${channel}`,
+          ephemeral: true
+        });
+      }
+
+      if (interaction.customId.startsWith("delete_")) {
+        const cartId = interaction.customId.replace("delete_", "");
+        const cart = db.carts[cartId];
+
+        if (!cart) {
+          return interaction.reply({
+            content: "❌ Carrinho não encontrado.",
+            ephemeral: true
+          });
+        }
+
+        if (interaction.user.id !== cart.userId && !isAdmin(interaction.member)) {
+          return interaction.reply({
+            content: "❌ Você não pode deletar este carrinho.",
+            ephemeral: true
+          });
+        }
+
+        cart.status = "deleted";
+        saveDB(db);
+
+        await interaction.reply({
+          content: "🗑️ Carrinho será deletado em 5 segundos."
+        });
+
         setTimeout(async () => {
           try {
-            const logChannel = interaction.guild.channels.cache.get(LOG_CHANNEL_ID);
-            if (logChannel) {
-              await logChannel.send(
-                `🗑️ Ticket ${interaction.channel.name} fechado por ${interaction.user.tag}`
-              );
-            }
-
             await interaction.channel.delete();
-          } catch (error) {
-            console.error('Erro ao fechar ticket:', error);
-          }
+          } catch {}
         }, 5000);
-
-        return;
       }
+
+      if (interaction.customId.startsWith("coupon_")) {
+        const cartId = interaction.customId.replace("coupon_", "");
+
+        const modal = new ModalBuilder()
+          .setCustomId(`coupon_modal_${cartId}`)
+          .setTitle("Aplicar cupom");
+
+        const input = new TextInputBuilder()
+          .setCustomId("coupon_code")
+          .setLabel("Digite o cupom")
+          .setPlaceholder("Exemplo: BOOSTER26")
+          .setRequired(true)
+          .setStyle(TextInputStyle.Short);
+
+        modal.addComponents(new ActionRowBuilder().addComponents(input));
+
+        return interaction.showModal(modal);
+      }
+
+      if (interaction.customId.startsWith("pay_")) {
+        const cartId = interaction.customId.replace("pay_", "");
+        const cart = db.carts[cartId];
+
+        if (!cart) {
+          return interaction.reply({
+            content: "❌ Carrinho não encontrado.",
+            ephemeral: true
+          });
+        }
+
+        if (interaction.user.id !== cart.userId) {
+          return interaction.reply({
+            content: "❌ Apenas o dono do carrinho pode ir para o pagamento.",
+            ephemeral: true
+          });
+        }
+
+        if (cart.items.length === 0) {
+          return interaction.reply({
+            content: "❌ Seu carrinho está vazio.",
+            ephemeral: true
+          });
+        }
+
+        const subtotal = cart.items.reduce(
+          (sum, item) => sum + item.price * item.quantity,
+          0
+        );
+
+        const total = subtotal - subtotal * cart.discount;
+
+        const embed = new EmbedBuilder()
+          .setColor(0x2ecc71)
+          .setTitle("Pagamento")
+          .setDescription(
+            `💸 **Valor total:** ${formatMoney(total)}\n\n` +
+              `🔑 **Chave Pix:**\n\`${process.env.PIX_KEY}\`\n\n` +
+              "Após pagar, envie o comprovante neste carrinho e clique em **Já paguei**."
+          )
+          .setFooter({ text: `Carrinho: ${cart.id}` });
+
+        const row = new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setCustomId(`paid_${cart.id}`)
+            .setLabel("Já paguei")
+            .setEmoji("✅")
+            .setStyle(ButtonStyle.Success)
+        );
+
+        return interaction.reply({
+          embeds: [embed],
+          components: [row]
+        });
+      }
+
+      if (interaction.customId.startsWith("paid_")) {
+        const cartId = interaction.customId.replace("paid_", "");
+        const cart = db.carts[cartId];
+
+        if (!cart) {
+          return interaction.reply({
+            content: "❌ Carrinho não encontrado.",
+            ephemeral: true
+          });
+        }
+
+        if (interaction.user.id !== cart.userId) {
+          return interaction.reply({
+            content: "❌ Apenas o dono do carrinho pode confirmar o pagamento.",
+            ephemeral: true
+          });
+        }
+
+        const embed = new EmbedBuilder()
+          .setColor(0xf1c40f)
+          .setTitle("Pagamento aguardando aprovação")
+          .setDescription(
+            `<@${cart.userId}> informou que realizou o pagamento.\n\n` +
+              "A equipe deve conferir o comprovante e aprovar ou recusar abaixo."
+          )
+          .setFooter({ text: `Carrinho: ${cart.id}` })
+          .setTimestamp();
+
+        const row = new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setCustomId(`approve_${cart.id}`)
+            .setLabel("Aprovar pagamento")
+            .setEmoji("✅")
+            .setStyle(ButtonStyle.Success),
+
+          new ButtonBuilder()
+            .setCustomId(`reject_${cart.id}`)
+            .setLabel("Recusar pagamento")
+            .setEmoji("❌")
+            .setStyle(ButtonStyle.Danger)
+        );
+
+        return interaction.reply({
+          content: `<@&${process.env.ADMIN_ROLE_ID}>`,
+          embeds: [embed],
+          components: [row]
+        });
+      }
+
+      if (interaction.customId.startsWith("approve_")) {
+        if (!isAdmin(interaction.member)) {
+          return interaction.reply({
+            content: "❌ Apenas administradores podem aprovar pagamentos.",
+            ephemeral: true
+          });
+        }
+
+        const cartId = interaction.customId.replace("approve_", "");
+        const cart = db.carts[cartId];
+
+        if (!cart) {
+          return interaction.reply({
+            content: "❌ Carrinho não encontrado.",
+            ephemeral: true
+          });
+        }
+
+        cart.status = "approved";
+        cart.approvedAt = Date.now();
+
+        const subtotal = cart.items.reduce(
+          (sum, item) => sum + item.price * item.quantity,
+          0
+        );
+
+        const discountValue = subtotal * cart.discount;
+        const total = subtotal - discountValue;
+
+        for (const item of cart.items) {
+          if (db.products[item.id]) {
+            db.products[item.id].stock = Math.max(
+              0,
+              db.products[item.id].stock - item.quantity
+            );
+          }
+        }
+
+        saveDB(db);
+
+        const productsText = cart.items
+          .map(
+            (item, index) =>
+              `${index + 1} - ${item.name} x${item.quantity} - ${formatMoney(
+                item.price * item.quantity
+              )}`
+          )
+          .join("\n");
+
+        const approvedEmbed = new EmbedBuilder()
+          .setColor(0x2ecc71)
+          .setTitle("COMPRA APROVADA")
+          .setDescription(
+            `👤 **Comprador:** <@${cart.userId}>\n` +
+              `💰 **Valor pago:** ${formatMoney(total)}\n` +
+              `🏷️ **Valor do desconto:** ${formatMoney(discountValue)}\n` +
+              `🎟️ **Cupom usado:** ${cart.couponCode || "Nenhum"}\n` +
+              `📆 **Data do carrinho:** <t:${Math.floor(cart.createdAt / 1000)}:f>\n` +
+              `✅ **Data aprovado:** <t:${Math.floor(Date.now() / 1000)}:f>\n` +
+              `🆔 **Identificador:** ${cart.id}\n` +
+              `⭐ **Avaliação:** 5 estrelas\n\n` +
+              `**PRODUTOS**\n${productsText}`
+          );
+
+        await interaction.update({
+          content: "✅ Pagamento aprovado com sucesso.",
+          embeds: [approvedEmbed],
+          components: []
+        });
+
+        const deliveryChannel = interaction.guild.channels.cache.get(
+          process.env.DELIVERY_CHANNEL_ID
+        );
+
+        if (deliveryChannel) {
+          await deliveryChannel.send({
+            content: `<@${cart.userId}>`,
+            embeds: [approvedEmbed]
+          });
+        }
+
+        try {
+          const user = await client.users.fetch(cart.userId);
+          await user.send(
+            "✅ Sua compra foi aprovada na Holy Store. Aguarde a entrega pelo servidor."
+          );
+        } catch {}
+      }
+
+      if (interaction.customId.startsWith("reject_")) {
+        if (!isAdmin(interaction.member)) {
+          return interaction.reply({
+            content: "❌ Apenas administradores podem recusar pagamentos.",
+            ephemeral: true
+          });
+        }
+
+        const cartId = interaction.customId.replace("reject_", "");
+        const cart = db.carts[cartId];
+
+        if (!cart) {
+          return interaction.reply({
+            content: "❌ Carrinho não encontrado.",
+            ephemeral: true
+          });
+        }
+
+        cart.status = "rejected";
+        saveDB(db);
+
+        return interaction.update({
+          content: "❌ Pagamento recusado. Confira o comprovante com a equipe.",
+          embeds: [],
+          components: []
+        });
+      }
+    }
+
+    if (interaction.isModalSubmit()) {
+      if (!interaction.customId.startsWith("coupon_modal_")) return;
+
+      const cartId = interaction.customId.replace("coupon_modal_", "");
+      const coupon = interaction.fields
+        .getTextInputValue("coupon_code")
+        .trim()
+        .toUpperCase()
+        .replace(/\s+/g, "");
+
+      const db = loadDB();
+      const cart = db.carts[cartId];
+
+      if (!cart) {
+        return interaction.reply({
+          content: "❌ Carrinho não encontrado.",
+          ephemeral: true
+        });
+      }
+
+      if (interaction.user.id !== cart.userId) {
+        return interaction.reply({
+          content: "❌ Apenas o dono do carrinho pode aplicar cupom.",
+          ephemeral: true
+        });
+      }
+
+      const couponData = db.coupons[coupon];
+
+      if (!couponData || couponData.active !== true) {
+        return interaction.reply({
+          content: "❌ Cupom inválido ou desativado.",
+          ephemeral: true
+        });
+      }
+
+      cart.discount = couponData.discount / 100;
+      cart.couponCode = couponData.code;
+
+      db.carts[cart.id] = cart;
+      saveDB(db);
+
+      await renderCart(interaction.channel, cart);
+
+      return interaction.reply({
+        content: `✅ Cupom aplicado: ${couponData.code} — ${couponData.discount}% de desconto.`,
+        ephemeral: true
+      });
     }
   } catch (error) {
     console.error(error);
 
-    if (interaction.deferred || interaction.replied) {
-      await interaction.followUp({
-        content: 'Ocorreu um erro ao processar essa ação.',
-        ephemeral: true
-      }).catch(() => {});
-    } else {
-      await interaction.reply({
-        content: 'Ocorreu um erro ao processar essa ação.',
-        ephemeral: true
-      }).catch(() => {});
+    const msg =
+      "❌ Ocorreu um erro. Confira se o bot tem permissões de Administrador, Gerenciar Canais, Ver Canais, Enviar Mensagens e Incorporar Links.";
+
+    if (interaction.replied || interaction.deferred) {
+      return interaction.followUp({ content: msg, ephemeral: true });
     }
+
+    return interaction.reply({ content: msg, ephemeral: true });
   }
 });
 
